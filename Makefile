@@ -1,6 +1,6 @@
 CFLAGS=-Wall
 LDFLAGS=-lm
-CC=gcc-4.8
+CC=gcc
 BINARIES=tty_bus tty_fake tty_plug tty_attach dpipe
 
 PREFIX?=/usr/local
