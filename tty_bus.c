@@ -43,6 +43,7 @@ int bus_init(char *path)
 {
 	struct sockaddr_un sun;
 	int connect_fd = socket(PF_UNIX, SOCK_STREAM, 0);
+	memset(&sun, 0, sizeof(struct sockaddr_un));
 	sun.sun_family = AF_UNIX;
 	strncpy(sun.sun_path, path, strlen(path));
 	if(bind(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0){
