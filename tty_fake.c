@@ -152,7 +152,7 @@ int main(int argc,char *argv[])
 		if (pollret == 0)
 			continue;
 
-		if ( (pfd[0].revents & POLLHUP || pfd[0].revents & POLLERR || pfd[0].revents &POLLNVAL) ||
+		if ( (pfd[0].revents & POLLERR || pfd[0].revents &POLLNVAL) ||
 			(pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents &POLLNVAL) )
 			exit(1);
 		if (pfd[0].revents & POLLIN) {
