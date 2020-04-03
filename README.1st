@@ -1,6 +1,5 @@
-changes:
-do not kill tty_fakes just because someone calls (for example) stty on them.
-Calling stty on a /dev/pts/X seems to set POLLHUP, so i just do not check for POLLHUP on the pty side of things for now.
+Ignore and use original Repository.
+I probably should clone this and make it private, as my changes will likely not be useful for anyone else. Too lazy for now.
 
 TTYBUS project. Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>. 
 
