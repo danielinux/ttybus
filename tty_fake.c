@@ -26,11 +26,13 @@
 #define BUFFER_SIZE 4096
 #define POLL_R_TIMEOUT 100
 #define POLL_W_TIMEOUT 50
+#define POLL_INTERVAL 10000000
 
 static char *ttyfake;
 static char *tty_bus_path;
 static char *ttybak;
 static int force_overwrite = 0;
+static int restore = 0;
 
 static void usage(char *app)
 {
@@ -56,11 +58,14 @@ int tty_connect(char *path)
 	return connect_fd;
 }
 
-static void _tty_restore(void) {
-	fprintf(stderr, "Restoring original device\n");
+static void _tty_cleanup(void) {
+	fprintf(stderr, "Removing Symlink\n");
 	unlink(ttyfake);
-	link(ttybak, ttyfake);
-	unlink(ttybak);
+    if(restore) {
+	fprintf(stderr, "Restoring original device\n");
+        link(ttybak, ttyfake);
+        unlink(ttybak);
+    }
 }
 
 static void tty_restore(int __attribute__((unused)) signo)
@@ -77,6 +82,9 @@ int main(int argc,char *argv[])
 	char buffer[BUFFER_SIZE];
 	char *pts;
 	int ptmx;
+    struct timespec poll_interval, remaining;
+    poll_interval.tv_sec = 0;
+    poll_interval.tv_nsec = POLL_INTERVAL;
 
 	while (1) {
 		int c;
@@ -110,11 +118,7 @@ int main(int argc,char *argv[])
 			unlink(ttybak);
 			link(ttyfake,ttybak);
 			unlink(ttyfake);
-			atexit(_tty_restore);
-			sigset(SIGTERM,tty_restore);
-			sigset(SIGINT,tty_restore);
-			sigset(SIGUSR1,tty_restore);
-			sigset(SIGUSR2,tty_restore);
+            restore = 1;
 		} else {
 			fprintf(stderr, "%s already exists! use -o to force overwrite\n", ttyfake);
 			exit(1);
@@ -137,9 +141,15 @@ int main(int argc,char *argv[])
 
 	symlink(pts,ttyfake);
 	chmod(pts,00777);
+    atexit(_tty_cleanup);
+    sigset(SIGTERM,tty_restore);
+    sigset(SIGINT,tty_restore);
+    sigset(SIGUSR1,tty_restore);
+    sigset(SIGUSR2,tty_restore);
 
 
 	for (;;) {
+        nanosleep(&poll_interval, &remaining);
 		pfd[0].fd = ptmx;
 		pfd[0].events = POLLIN;
 		pfd[1].fd = fd;
@@ -149,8 +159,9 @@ int main(int argc,char *argv[])
 			fprintf(stderr, "Poll error: %s\n", strerror(errno));
 			exit(1);
 		}
-		if (pollret == 0)
+		if (pollret == 0) {
 			continue;
+        }
 
 		if ( (pfd[0].revents & POLLERR || pfd[0].revents &POLLNVAL) ||
 			(pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents &POLLNVAL) )
