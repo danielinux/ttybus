@@ -214,7 +214,7 @@ int main(int argc, char *argv[]) {
 
     if (pfd[0].revents & POLLIN) {
       struct sockaddr_un cliaddr;
-      size_t len = sizeof(struct sockaddr_un);
+      socklen_t len = sizeof(struct sockaddr_un);
       int connfd = accept(listenfd, (struct sockaddr *) &cliaddr, &len);
       if (connfd == -1) {
         bus_destroy(listenfd, tty_bus_path);
