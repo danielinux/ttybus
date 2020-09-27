@@ -55,7 +55,7 @@ int tty_connect(char *path) {
 int main(int argc, char *argv[]) {
   int fd;
   struct pollfd pfd[2];
-  int pollret, r, w;
+  int pollret, r;
   char buffer[BUFFER_SIZE];
   int realdev;
 
@@ -136,7 +136,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       }
       if (pfd[1].revents & POLLOUT)
-        w = write(fd, buffer, r);
+        write(fd, buffer, r);
     }
     if (pfd[1].revents & POLLIN) {
       r = read(fd, buffer, BUFFER_SIZE);
@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
         exit(1);
       }
       if (pfd[0].revents & POLLOUT)
-        w = write(realdev, buffer, r);
+        write(realdev, buffer, r);
     }
   }
 }

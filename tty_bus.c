@@ -123,7 +123,7 @@ int check_poll_errors(struct pollfd *pfd, int n, int *tty) {
 
 void recvbuff(int src, char *buf, int size, int *tty) {
   struct pollfd *wpfd;
-  int n, i, w;
+  int n, i;
   int pollret;
 
   wpfd = (struct pollfd *) malloc(sizeof(struct pollfd) * MAX_TTY);
@@ -144,7 +144,7 @@ void recvbuff(int src, char *buf, int size, int *tty) {
 
     for (i = 0; i < n; i++) {
       if (wpfd[i].revents & POLLOUT && wpfd[i].fd != src)
-        w = write(wpfd[i].fd, buf, size);
+        write(wpfd[i].fd, buf, size);
     }
   }
   free(wpfd);
