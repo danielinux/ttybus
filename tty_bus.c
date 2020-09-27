@@ -159,6 +159,7 @@ int main(int argc, char *argv[]) {
   struct pollfd *pfd;
   int *tty;
   char buffer[BUFFER_SIZE];
+  int daemonise = 0;
 
   pfd = (struct pollfd *) malloc(sizeof(struct pollfd) * (1 + MAX_TTY));
   tty = (int *) malloc(sizeof(int) * MAX_TTY);
@@ -168,11 +169,14 @@ int main(int argc, char *argv[]) {
   }
   while (1) {
     int c;
-    c = getopt(argc, argv, "hs:");
+    c = getopt(argc, argv, "dhs:");
     if (c == -1)
       break;
 
     switch (c) {
+      case 'd':
+        daemonise = 1;
+        break;
       case 'h':
         usage(argv[0]);  // implies exit
         break;
@@ -185,6 +189,9 @@ int main(int argc, char *argv[]) {
   }
   if (optind < argc)
     usage(argv[0]);  // implies exit
+
+  if (daemonise)
+    daemon(0, 0);
 
   if (!tty_bus_path)
     tty_bus_path = strdup("/tmp/ttybus");

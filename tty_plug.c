@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
   struct pollfd pfd[2];
   int pollret, r;
   char buffer[BUFFER_SIZE];
+  int daemonise = 0;
 
   while (1) {
     int c;
@@ -63,6 +64,9 @@ int main(int argc, char *argv[]) {
       break;
 
     switch (c) {
+      case 'd':
+        daemonise = 1;
+        break;
       case 'h':
         usage(argv[0]);  // implies exit
         break;
@@ -78,6 +82,9 @@ int main(int argc, char *argv[]) {
   }
   if (optind < argc)
     usage(argv[0]);  // implies exit
+
+  if (daemonise)
+    daemon(0, 0);
 
   if (!tty_bus_path)
     tty_bus_path = strdup("/tmp/ttybus");

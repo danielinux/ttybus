@@ -19,7 +19,6 @@
 
 #include "configure.h"
 
-
 #define MAX_TTY        256
 #define BUFFER_SIZE    4096
 #define POLL_R_TIMEOUT 100
@@ -39,6 +38,7 @@ static void usage(char *app) {
   fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n");
   exit(2);
 }
+
 
 int tty_connect(char *path) {
   struct sockaddr_un sun;
@@ -74,14 +74,18 @@ int main(int argc, char *argv[]) {
   char buffer[BUFFER_SIZE];
   char *pts;
   int ptmx;
+  int daemonise = 0;
 
   while (1) {
     int c;
-    c = getopt(argc, argv, "hos:");
+    c = getopt(argc, argv, "dhos:");
     if (c == -1)
       break;
 
     switch (c) {
+      case 'd':
+        daemonise = 1;
+        break;
       case 'h':
         usage(argv[0]);  // implies exit
         break;
@@ -97,6 +101,9 @@ int main(int argc, char *argv[]) {
   }
   if (optind != (argc - 1))
     usage(argv[0]);  // implies exit
+
+  if (daemonise)
+    daemon(0, 0);
 
   ttyfake = strdup(argv[optind]);
   if (access(ttyfake, W_OK) == 0) {

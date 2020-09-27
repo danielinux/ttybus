@@ -58,14 +58,18 @@ int main(int argc, char *argv[]) {
   int pollret, r;
   char buffer[BUFFER_SIZE];
   int realdev;
+  int daemonise = 0;
 
   while (1) {
     int c;
-    c = getopt(argc, argv, "hi:s:");
+    c = getopt(argc, argv, "dhi:s:");
     if (c == -1)
       break;
 
     switch (c) {
+      case 'd':
+        daemonise = 1;
+        break;
       case 'h':
         usage(argv[0]);  // implies exit
         break;
@@ -81,6 +85,9 @@ int main(int argc, char *argv[]) {
   }
   if (optind != (argc - 1))
     usage(argv[0]);  // implies exit
+
+  if (daemonise)
+    daemon(0, 0);
 
   devname = strdup(argv[optind]);
 
