@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
@@ -18,7 +19,6 @@
 #include <unistd.h>
 
 #include "configure.h"
-
 
 #define MAX_TTY        256
 #define BUFFER_SIZE    4096
