@@ -1,17 +1,18 @@
-TTYBUS project. Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>.
+# TTYBUS project
+Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>.
 
 
-# OVERVIEW
+## OVERVIEW
 The **TTYBUS** project is a toolkit that provides tty device virtualization, multiplexing, spoofing and sharing among unix processes.
 It allows users to connect their real and virtual terminals (including real serial devices) to a shared, *non-reliable* bus, and
 then to virtually any input/output stream.
 
 
-# LICENSE
+## LICENSE
 **TTYBUS** comes without any warranty and it is released under the terms of the GNU/GPL v.2
 
 
-# IDEA
+## IDEA
 **TTYBUS** steals the architecture concept from VDE (Virtual Distributed Ethernet) design.
 The working scheme is quite simple: Users can connect their ttys together in a virtual bus, then all data sent and received
 from any of the devices connected to the virtual bus is echoed to all other devices.
@@ -19,38 +20,38 @@ from any of the devices connected to the virtual bus is echoed to all other devi
 This includes real and virtual tty devices, with the possibility to create fake devices using posix pseudo-terminals.
 
 
-# COMPONENTS
+## COMPONENTS
 
-## `tty_bus`
+### `tty_bus`
 Creates a new tty_bus running on the system, at a given bus path specified with the `-s` option. The command creates the bus
 and exposes a unix socket at the given path. Once the path has been created, any device can be plugged in using the other
 toolkit's commands. The `-d` option deamonizes the process and detaches it from the terminal.
 
-## `tty_plug`
+### `tty_plug`
 Connects `STDIN/STDOUT` of the current terminal to the tty_bus specified with the `-s` option.
 Eventually the `-i` option can be specified to add an init string to be passed to process stdout before it's connected
 to the tty_bus. The `-d` option deamonizes the process and detaches it from the terminal.
 
-## `tty_fake`
+### `tty_fake`
 Creates a new pseudo-terminal devices connected to the tty_bus specified with the `-s` option. If the given path for the fake
 device already exists, `tty_fake` can be forced to replace it with the `-o` option. The `-d` option deamonizes the process and
 detaches it from the terminal.
 
-## `tty_attach`
+### `tty_attach`
 Open a real (existing) tty and connects it to the tty_bus specified with the -s option.
 Eventually the `-i` option can be specified to add an init string to be passed to the real tty device before it's connected
 to the tty_bus. The `-d` option deamonizes the process and detaches it from the terminal.
 
-## `dpipe`
+### `dpipe`
 Taken from the VDE project, allows two unix processes to communicate each-other by attaching each process' `STDOUT` stream to
 the other one's `STDIN`.
 
 Please refer to each command's help for usage notes, using the `-h` option .
 
 
-# EXAMPLES
+## EXAMPLES
 
-## Use case 1
+### Use case 1
 Multiplexing serial input only or output only device attached to `/dev/ttyS0`, for use with multiple applications.
 
 1. Create a new tty_bus called `/tmp/ttyS0mux`:
@@ -78,7 +79,7 @@ Both application will read (or write) from the same serial device.
 **CAUTION:** all data written on each of the two fake devices will be echoed on the other one too.
 
 
-## Use case 2
+### Use case 2
 Create fake NMEA devices from your running gpsd daemon.
 
 1. Create the bus:
@@ -98,7 +99,7 @@ Create fake NMEA devices from your running gpsd daemon.
 	`/usr/local/games/stupid_nmea_app /dev/gps0`
 
 
-## Use case 3:
+### Use case 3:
 Remote serial device via SSH tunnel. Host *mars* has a serial device connected on `/dev/ttyUSB0`, which must be  accessed and used from host *venus*.
 
 1. Create two `tty_bus`ses, one per machine.
