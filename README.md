@@ -1,5 +1,9 @@
 # TTYBUS project
-Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>.
+**Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>**
+
+`dpipe` command - copyright 2003 Renzo Davoli
+
+Daemonization option - copyright 2020 Frank Sautter <github@sautter.com>
 
 
 ## OVERVIEW
@@ -76,7 +80,7 @@ Multiplexing serial input only or output only device attached to `/dev/ttyS0`, f
 
 Both application will read (or write) from the same serial device.
 
-**CAUTION:** all data written on each of the two fake devices will be echoed on the other one too.
+**CAUTION:** All data written on each of the two fake devices will be echoed on the other one too.
 
 
 ### Use case 2
