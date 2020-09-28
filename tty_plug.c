@@ -33,7 +33,7 @@ static void usage(char *app) {
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
-  fprintf(stderr, "-i init_string: send init string to plug's STDOUT\n");
+  fprintf(stderr, "-i init_string: send init string to plug's STDOUT\n\n");
   fprintf(stderr, "Please also see: tty_bus, tty_attach, tty_fake, dpipe\n");
   fprintf(stderr, "Example of usage:\n");
   fprintf(stderr, "  Create two tty_bus, one per machine\n");

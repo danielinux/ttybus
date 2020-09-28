@@ -37,7 +37,7 @@ static void usage(char *app) {
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
-  fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n");
+  fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n\n");
   fprintf(stderr, "Please also see: tty_bus, tty_attach, tty_plug, dpipe\n");
   fprintf(stderr, "Example of usage:\n");
   fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");

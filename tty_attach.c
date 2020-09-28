@@ -35,7 +35,7 @@ static void usage(char *app) {
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
-  fprintf(stderr, "-i init_string: send init string to device\n");
+  fprintf(stderr, "-i init_string: send init string to device\n\n");
   fprintf(stderr, "Please also see: tty_bus, tty_fake, tty_plug, dpipe\n");
   fprintf(stderr, "Example of usage:\n");
   fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");
