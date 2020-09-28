@@ -24,21 +24,22 @@ This includes real and virtual tty devices, with the possibility to create fake 
 ## `tty_bus`
 Creates a new tty_bus running on the system, at a given bus path specified with the `-s` option. The command creates the bus
 and exposes a unix socket at the given path. Once the path has been created, any device can be plugged in using the other
-toolkit's commands.
+toolkit's commands. The `-d` option deamonizes the process and detaches it from the terminal.
 
 ## `tty_plug`
 Connects `STDIN/STDOUT` of the current terminal to the tty_bus specified with the `-s` option.
 Eventually the `-i` option can be specified to add an init string to be passed to process stdout before it's connected
-to the tty_bus.
+to the tty_bus. The `-d` option deamonizes the process and detaches it from the terminal.
 
 ## `tty_fake`
 Creates a new pseudo-terminal devices connected to the tty_bus specified with the `-s` option. If the given path for the fake
-device already exists, `tty_fake` can be forced to replace it with the `-o` option.
+device already exists, `tty_fake` can be forced to replace it with the `-o` option. The `-d` option deamonizes the process and
+detaches it from the terminal.
 
 ## `tty_attach`
 Open a real (existing) tty and connects it to the tty_bus specified with the -s option.
 Eventually the `-i` option can be specified to add an init string to be passed to the real tty device before it's connected
-to the tty_bus.
+to the tty_bus. The `-d` option deamonizes the process and detaches it from the terminal.
 
 ## `dpipe`
 Taken from the VDE project, allows two unix processes to communicate each-other by attaching each process' `STDOUT` stream to
@@ -54,17 +55,17 @@ Multiplexing serial input only or output only device attached to `/dev/ttyS0`, f
 
 1. Create a new tty_bus called `/tmp/ttyS0mux`:
 
-	`tty_bus -s /tmp/ttyS0mux`
+	`tty_bus -d -s /tmp/ttyS0mux`
 
 1. Connect the real device to the bus using `tty_attach`:
 
-	`tty_attach -s /tmp/ttyS0mux /dev/ttyS0`
+	`tty_attach -d -s /tmp/ttyS0mux /dev/ttyS0`
 
 1. Create two fake `/dev/ttyS0` devices, attached to the bus:
 
-	`tty_fake -s /tmp/ttyS0mux /dev/ttyS0fake0`
+	`tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0fake0`
 
-	`tty_fake -s /tmp/ttyS0mux /dev/ttyS0fake1`
+	`tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0fake1`
 
 1. Start your application and force it to use the new serial device for input or output
 
@@ -100,7 +101,7 @@ Create fake NMEA devices from your running gpsd daemon.
 ## Use case 3:
 Remote serial device via SSH tunnel. Host *mars* has a serial device connected on `/dev/ttyUSB0`, which must be  accessed and used from host *venus*.
 
-1. Create two `tty_bus`, one per machine.
+1. Create two `tty_bus`ses, one per machine.
 
 	`mars:$ tty_bus -s /tmp/exported_ttybus`
 
