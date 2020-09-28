@@ -38,6 +38,15 @@ static void usage(char *app) {
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
   fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n");
+  fprintf(stderr, "Please also see: tty_bus, tty_attach, tty_plug, dpipe)\n");
+  fprintf(stderr, "Example of usage:\n");
+  fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_bus -d -s /tmp/ttyS0mux\n");
+  fprintf(stderr, "  Connect a real device to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_attach -d -s /tmp/ttyS0mux /dev/ttyS0\n");
+  fprintf(stderr, "  Create two fake ttyS0 devices, attached to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.0\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.1\n");
   exit(2);
 }
 

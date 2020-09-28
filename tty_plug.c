@@ -34,6 +34,18 @@ static void usage(char *app) {
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
   fprintf(stderr, "-i init_string: send init string to plug's STDOUT\n");
+  fprintf(stderr, "Please also see: tty_bus, tty_attach, tty_fake, dpipe)\n");
+  fprintf(stderr, "Example of usage:\n");
+  fprintf(stderr, "  Create two tty_bus, one per machine\n");
+  fprintf(stderr, "    mars:$ tty_bus -d -s /tmp/exported_ttybus\n");
+  fprintf(stderr, "    venus:$ tty_bus -d -s /tmp/remote_ttybus\n");
+  fprintf(stderr, "  On mars, attach the device to the local bus\n");
+  fprintf(stderr, "    mars:$ tty_attach -d -s /tmp/exported_ttybus /dev/ttyUSB0\n");
+  fprintf(stderr, "  On venus, prepare the fake tty device, on the same path,\n");
+  fprintf(stderr, "  temporarly overriding the local /dev/ttyUSB0 device\n");
+  fprintf(stderr, "    venus:$ tty_fake -d -s /tmp/remote_ttybus -o /dev/ttyUSB0\n");
+  fprintf(stderr, "  Connect the two buses on the two hosts, using remote ssh command and tty_plug\n");
+  fprintf(stderr, "    venus:$ dpipe tty_plug -s /tmp/remote_ttybus = ssh mars tty_plug -s /tmp/exported_ttybus\n");
   exit(2);
 }
 
