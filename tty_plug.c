@@ -30,6 +30,7 @@ static void usage(char *app) {
   fprintf(stderr, "%s, Ver %s.%s.%s\n", basename(app), MAJORV, MINORV, SVNVERSION);
   fprintf(stderr, "Usage: %s [-h] [-s bus_path]\n", app);
   fprintf(stderr, "-h: shows this help\n");
+  fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
   fprintf(stderr, "-i init_string: send init string to plug's STDOUT\n");
   exit(2);
@@ -55,7 +56,7 @@ int main(int argc, char *argv[]) {
   struct pollfd pfd[2];
   int pollret, r;
   char buffer[BUFFER_SIZE];
-  int daemonise = 0;
+  int daemonize = 0;
 
   while (1) {
     int c;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
 
     switch (c) {
       case 'd':
-        daemonise = 1;
+        daemonize = 1;
         break;
       case 'h':
         usage(argv[0]);  // implies exit
@@ -83,7 +84,7 @@ int main(int argc, char *argv[]) {
   if (optind < argc)
     usage(argv[0]);  // implies exit
 
-  if (daemonise)
+  if (daemonize)
     daemon(0, 0);
 
   if (!tty_bus_path)

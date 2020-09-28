@@ -32,6 +32,7 @@ static void usage(char *app) {
   fprintf(stderr, "%s, Ver %s.%s.%s\n", basename(app), MAJORV, MINORV, SVNVERSION);
   fprintf(stderr, "Usage: %s [-h] [-s bus_path] tty_device\n", app);
   fprintf(stderr, "-h: shows this help\n");
+  fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
   fprintf(stderr, "-i init_string: send init string to device\n");
   exit(2);
@@ -58,7 +59,7 @@ int main(int argc, char *argv[]) {
   int pollret, r;
   char buffer[BUFFER_SIZE];
   int realdev;
-  int daemonise = 0;
+  int daemonize = 0;
 
   while (1) {
     int c;
@@ -68,7 +69,7 @@ int main(int argc, char *argv[]) {
 
     switch (c) {
       case 'd':
-        daemonise = 1;
+        daemonize = 1;
         break;
       case 'h':
         usage(argv[0]);  // implies exit
@@ -86,7 +87,7 @@ int main(int argc, char *argv[]) {
   if (optind != (argc - 1))
     usage(argv[0]);  // implies exit
 
-  if (daemonise)
+  if (daemonize)
     daemon(0, 0);
 
   devname = strdup(argv[optind]);
