@@ -28,8 +28,8 @@ toolkit's commands.
 
 ## `tty_plug`
 Connects `STDIN/STDOUT` of the current terminal to the tty_bus specified with the `-s` option.
-Eventually the -i option can be specified to add an init string to be passed to process stdout before it's connected
-to the tty bus.
+Eventually the `-i` option can be specified to add an init string to be passed to process stdout before it's connected
+to the tty_bus.
 
 ## `tty_fake`
 Creates a new pseudo-terminal devices connected to the tty_bus specified with the `-s` option. If the given path for the fake
@@ -37,10 +37,10 @@ device already exists, `tty_fake` can be forced to replace it with the `-o` opti
 
 ## `tty_attach`
 Open a real (existing) tty and connects it to the tty_bus specified with the -s option.
-Eventually the -i option can be specified to add an init string to be passed to the real tty device before it's connected
-to the tty bus.
+Eventually the `-i` option can be specified to add an init string to be passed to the real tty device before it's connected
+to the tty_bus.
 
-## dpipe
+## `dpipe`
 Taken from the VDE project, allows two unix processes to communicate each-other by attaching each process' `STDOUT` stream to
 the other one's `STDIN`.
 
@@ -52,7 +52,7 @@ Please refer to each command's help for usage notes, using the `-h` option .
 ## Use case 1
 Multiplexing serial input only or output only device attached to `/dev/ttyS0`, for use with multiple applications.
 
-1. Create a new tty bus called `/tmp/ttyS0mux`:
+1. Create a new tty_bus called `/tmp/ttyS0mux`:
 
 	`tty_bus -s /tmp/ttyS0mux`
 
