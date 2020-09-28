@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -49,6 +50,7 @@ int tty_connect(char *path) {
   strncpy(sun.sun_path, path, strlen(path));
   if (connect(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
     perror("Cannot connect to socket");
+    syslog(LOG_ERR, "Cannot connect to socket\n");
     exit(-1);
   }
   return connect_fd;
@@ -57,6 +59,7 @@ int tty_connect(char *path) {
 
 static void _tty_restore(void) {
   fprintf(stderr, "Restoring original device\n");
+  syslog(LOG_INFO, "Restoring original device\n");
   unlink(ttyfake);
   link(ttybak, ttyfake);
   unlink(ttybak);
@@ -121,6 +124,7 @@ int main(int argc, char *argv[]) {
       sigset(SIGUSR2, tty_restore);
     } else {
       fprintf(stderr, "%s already exists! use -o to force overwrite\n", ttyfake);
+      syslog(LOG_ERR, "%s already exists! use -o to force overwrite\n", ttyfake);
       exit(1);
     }
   }
@@ -129,11 +133,13 @@ int main(int argc, char *argv[]) {
     tty_bus_path = strdup("/tmp/ttybus");
 
   fprintf(stderr, "Connecting to bus: %s\n", tty_bus_path);
+  syslog(LOG_INFO, "Connecting to bus: %s\n", tty_bus_path);
   fd = tty_connect(tty_bus_path);
 
   ptmx = open("/dev/ptmx", O_RDWR);
   pts = (char *) ptsname(ptmx);
   fprintf(stderr, "Device: %s is now %s\n", pts, ttyfake);
+  syslog(LOG_INFO, "Device: %s is now %s\n", pts, ttyfake);
   grantpt(ptmx);
   unlockpt(ptmx);
 
@@ -148,20 +154,24 @@ int main(int argc, char *argv[]) {
     pollret = poll(pfd, 2, 1000);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
     if (pollret == 0)
       continue;
 
     if ((pfd[0].revents & POLLHUP || pfd[0].revents & POLLERR || pfd[0].revents & POLLNVAL) ||
-        (pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents & POLLNVAL))
+        (pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents & POLLNVAL)) {
+      syslog(LOG_INFO, "Terminating: %d %d\n", pfd[0].revents, pfd[1].revents);
       exit(1);
+    }
     if (pfd[0].revents & POLLIN) {
       r = read(ptmx, buffer, BUFFER_SIZE);
       pfd[1].events = POLLOUT;
       pollret = poll(&pfd[1], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
       if (pfd[1].revents & POLLOUT)
@@ -174,6 +184,7 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[0], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
       if (pfd[0].revents & POLLOUT)

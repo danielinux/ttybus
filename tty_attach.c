@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -47,6 +48,7 @@ int tty_connect(char *path) {
   strncpy(sun.sun_path, path, strlen(path));
   if (connect(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
     perror("Cannot connect to socket");
+    syslog(LOG_ERR, "Cannot connect to socket");
     exit(-1);
   }
   return connect_fd;
@@ -96,6 +98,7 @@ int main(int argc, char *argv[]) {
     tty_bus_path = strdup("/tmp/ttybus");
 
   fprintf(stderr, "Connecting to bus: %s\n", tty_bus_path);
+  syslog(LOG_INFO, "Connecting to bus: %s\n", tty_bus_path);
   fd = tty_connect(tty_bus_path);
 
   realdev = open(devname, O_RDWR);
@@ -110,6 +113,7 @@ int main(int argc, char *argv[]) {
     pollret = poll(&pfd[0], 1, 50);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
     if (pfd[0].revents & POLLOUT) {
@@ -117,6 +121,7 @@ int main(int argc, char *argv[]) {
       write(realdev, "\n", 1);
     } else {
       fprintf(stderr, "Device is busy, cannot send init string.\n");
+      syslog(LOG_WARNING, "Device is busy, cannot send init string.\n");
     }
   }
   for (;;) {
@@ -127,6 +132,7 @@ int main(int argc, char *argv[]) {
     pollret = poll(pfd, 2, 1000);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
     if (pollret == 0)
@@ -141,6 +147,7 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[1], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
       if (pfd[1].revents & POLLOUT)
@@ -153,7 +160,8 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[0], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
-        exit(1);
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
+       exit(1);
       }
       if (pfd[0].revents & POLLOUT)
         write(realdev, buffer, r);
