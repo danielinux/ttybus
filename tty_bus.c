@@ -15,6 +15,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -32,7 +33,16 @@ static void usage(char *app) {
   fprintf(stderr, "Usage: %s [-h] [-s bus_path]\n", app);
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
-  fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
+  fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n\n");
+  fprintf(stderr, "Please also see: tty_attach, tty_fake, tty_plug, dpipe\n");
+  fprintf(stderr, "Example of usage:\n");
+  fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_bus -d -s /tmp/ttyS0mux\n");
+  fprintf(stderr, "  Connect a real device to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_attach -d -s /tmp/ttyS0mux /dev/ttyS0\n");
+  fprintf(stderr, "  Create two fake ttyS0 devices, attached to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.0\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.1\n");
   exit(2);
 }
 
@@ -56,15 +66,18 @@ int bus_init(char *path) {
   if (bind(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
     if ((errno == EADDRINUSE)) {
       printf("Could not bind to socket '%s': %s\n", path, strerror(errno));
+      syslog(LOG_ERR, "Could not bind to socket '%s': %s\n", path, strerror(errno));
       exit(-1);
     } else if (bind(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
       printf("Could not bind to socket '%s' (second attempt): %s", path, strerror(errno));
+      syslog(LOG_ERR, "Could not bind to socket '%s' (second attempt): %s", path, strerror(errno));
       exit(-1);
     }
   }
   chmod(sun.sun_path, 0777);
   if (listen(connect_fd, 1) < 0) {
     printf("Could not listen on fd %d: %s", connect_fd, strerror(errno));
+    syslog(LOG_ERR, "Could not listen on fd %d: %s", connect_fd, strerror(errno));
     exit(-1);
   }
   return connect_fd;
@@ -128,9 +141,10 @@ void recvbuff(int src, char *buf, int size, int *tty) {
   int pollret;
 
   wpfd = (struct pollfd *) malloc(sizeof(struct pollfd) * MAX_TTY);
-  if (!wpfd)
+  if (!wpfd) {
     fprintf(stderr, "alloc error: %s\n", strerror(errno));
-
+    syslog(LOG_INFO, "alloc error: %s\n", strerror(errno));
+  }
 
   n = prepare_poll(tty, (struct pollfd **) &wpfd, -1, POLLOUT | POLLHUP);
   printf("Writing to %d clients: %d bytes\n", n, size);
@@ -138,6 +152,7 @@ void recvbuff(int src, char *buf, int size, int *tty) {
     pollret = poll(wpfd, n, POLL_W_TIMEOUT);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_WARNING, "Poll error: %s\n", strerror(errno));
       sleep(1);
       return;
     }
@@ -166,6 +181,7 @@ int main(int argc, char *argv[]) {
   tty = (int *) malloc(sizeof(int) * MAX_TTY);
   if (!pfd || !tty) {
     fprintf(stderr, "alloc error: %s\n", strerror(errno));
+    syslog(LOG_ERR, "alloc error: %s\n", strerror(errno));
     exit(4);
   }
   while (1) {
@@ -198,6 +214,7 @@ int main(int argc, char *argv[]) {
     tty_bus_path = strdup("/tmp/ttybus");
 
   fprintf(stderr, "Creating bus: %s\n", tty_bus_path);
+  syslog(LOG_INFO, "Creating bus: %s\n", tty_bus_path);
 
   atexit(exiting);
   sigset(SIGTERM, signaled);
@@ -207,6 +224,7 @@ int main(int argc, char *argv[]) {
   listenfd = bus_init(tty_bus_path);
   if (listenfd < 0) {
     fprintf(stderr, "Cannot bind to %s: %s\n", tty_bus_path, strerror(errno));
+    syslog(LOG_ERR, "Cannot bind to %s: %s\n", tty_bus_path, strerror(errno));
     exit(1);
   }
   for (;;) {
@@ -214,6 +232,7 @@ int main(int argc, char *argv[]) {
     pollret = poll(pfd, n, POLL_R_TIMEOUT);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s, n is %d\n", strerror(errno), n);
+      syslog(LOG_WARNING, "Poll error: %s, n is %d\n", strerror(errno), n);
       sleep(1);
       continue;
     }
