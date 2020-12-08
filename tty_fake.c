@@ -20,11 +20,11 @@
 
 #include "configure.h"
 
-#define MAX_TTY    256
-#define BUFFER_SIZE  4096
+#define MAX_TTY        256
+#define BUFFER_SIZE    4096
 #define POLL_R_TIMEOUT 100
 #define POLL_W_TIMEOUT 50
-#define POLL_INTERVAL 10000000
+#define POLL_INTERVAL  10000000
 
 static char *ttyfake;
 static char *tty_bus_path;
@@ -84,50 +84,60 @@ static void tty_restore(int __attribute__((unused)) signo) {
   exit(0);
 }
 
-int main(int argc,char *argv[])
+int main(int argc, char *argv[])
 {
-
   int fd; 
   struct pollfd pfd[2];
   int pollret, r;
   char buffer[BUFFER_SIZE];
   char *pts;
   int ptmx;
+  int daemonize = 0;
   struct timespec poll_interval, remaining;
   poll_interval.tv_sec = 0;
   poll_interval.tv_nsec = POLL_INTERVAL;
 
   while (1) {
     int c;
-    c = getopt (argc, argv, "hos:");
+    c = getopt(argc, argv, "dhos:");
     if (c == -1)
       break;
 
     switch (c) {
+      case 'd':
+        daemonize = 1;
+        break;
+
       case 'h':
-        usage(argv[0]); //implies exit
+        usage(argv[0]); // implies exit
         break;
 
       case 's':
-        tty_bus_path=strdup(optarg);
+        tty_bus_path = strdup(optarg);
         break;
+
       case 'o':
         force_overwrite = 1;
         break;
 
       default:
-        usage(argv[0]); //implies exit
+        usage(argv[0]); // implies exit
     }
-  } 
-  if (optind != (argc -1))
-    usage(argv[0]); //implies exit
+  }
+
+  if (optind != (argc - 1))
+    usage(argv[0]);  // implies exit
+
+  if (daemonize)
+    daemon(0, 0);
+
   ttyfake = strdup(argv[optind]);
-  if (access(ttyfake,W_OK) == 0) {
+  if (access(ttyfake, W_OK) == 0) {
     if (force_overwrite) {
       ttybak = malloc(strlen(ttyfake) + 5);
-      sprintf(ttybak, "%s.bak",ttyfake);
+      sprintf(ttybak, "%s.bak", ttyfake);
       unlink(ttybak);
-      link(ttyfake,ttybak);
+      link(ttyfake, ttybak);
       unlink(ttyfake);
       restore = 1;
     } else {
@@ -153,14 +163,13 @@ int main(int argc,char *argv[])
   grantpt(ptmx);
   unlockpt(ptmx);
 
-  symlink(pts,ttyfake);
-  chmod(pts,00777);
+  symlink(pts, ttyfake);
+  chmod(pts, 00777);
   atexit(_tty_cleanup);
-  sigset(SIGTERM,tty_restore);
-  sigset(SIGINT,tty_restore);
-  sigset(SIGUSR1,tty_restore);
-  sigset(SIGUSR2,tty_restore);
-
+  sigset(SIGTERM, tty_restore);
+  sigset(SIGINT, tty_restore);
+  sigset(SIGUSR1, tty_restore);
+  sigset(SIGUSR2, tty_restore);
 
   for (;;) {
     nanosleep(&poll_interval, &remaining);
@@ -186,13 +195,13 @@ int main(int argc,char *argv[])
     if (pfd[0].revents & POLLIN) {
       r = read(ptmx, buffer, BUFFER_SIZE);
       pfd[1].events = POLLOUT;
-      pollret = poll(&pfd[1], 1, 50);  
+      pollret = poll(&pfd[1], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
         syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
-      if(pfd[1].revents & POLLOUT) {
+      if (pfd[1].revents & POLLOUT) {
         write(fd, buffer, r);
       }
     }
@@ -200,15 +209,15 @@ int main(int argc,char *argv[])
       r = read(fd, buffer, BUFFER_SIZE);
       pfd[0].fd = ptmx;
       pfd[0].events = POLLOUT;
-      pollret = poll(&pfd[0], 1, 50);  
+      pollret = poll(&pfd[0], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
         syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
-      if(pfd[0].revents & POLLOUT) {
+      if (pfd[0].revents & POLLOUT) {
         write(ptmx, buffer, r);
       }
     }
-  }    
+  }
 }
