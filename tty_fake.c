@@ -76,7 +76,7 @@ int main(int argc,char *argv[])
 
   int fd; 
   struct pollfd pfd[2];
-  int pollret, r, w;
+  int pollret, r;
   char buffer[BUFFER_SIZE];
   char *pts;
   int ptmx;
@@ -173,7 +173,7 @@ int main(int argc,char *argv[])
         exit(1);
       }
       if(pfd[1].revents & POLLOUT) {
-        w = write(fd, buffer, r);
+        write(fd, buffer, r);
       }
     }
     if (pfd[1].revents & POLLIN) {
@@ -186,7 +186,7 @@ int main(int argc,char *argv[])
         exit(1);
       }
       if(pfd[0].revents & POLLOUT) {
-        w = write(ptmx, buffer, r);
+        write(ptmx, buffer, r);
       }
     }
   }    
