@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -23,11 +24,13 @@
 #define BUFFER_SIZE    4096
 #define POLL_R_TIMEOUT 100
 #define POLL_W_TIMEOUT 50
+#define POLL_INTERVAL  10000000
 
 static char *ttyfake;
 static char *tty_bus_path;
 static char *ttybak;
 static int force_overwrite = 0;
+static int restore = 0;
 
 
 static void usage(char *app) {
@@ -36,7 +39,16 @@ static void usage(char *app) {
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
-  fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n");
+  fprintf(stderr, "-o: temporarly backup tty_device to tty_device.bak, if it exists, and restore the original file at exit\n\n");
+  fprintf(stderr, "Please also see: tty_bus, tty_attach, tty_plug, dpipe\n");
+  fprintf(stderr, "Example of usage:\n");
+  fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_bus -d -s /tmp/ttyS0mux\n");
+  fprintf(stderr, "  Connect a real device to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_attach -d -s /tmp/ttyS0mux /dev/ttyS0\n");
+  fprintf(stderr, "  Create two fake ttyS0 devices, attached to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.0\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.1\n");
   exit(2);
 }
 
@@ -49,17 +61,22 @@ int tty_connect(char *path) {
   strncpy(sun.sun_path, path, strlen(path));
   if (connect(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
     perror("Cannot connect to socket");
+    syslog(LOG_ERR, "Cannot connect to socket\n");
     exit(-1);
   }
   return connect_fd;
 }
 
-
-static void _tty_restore(void) {
-  fprintf(stderr, "Restoring original device\n");
+static void _tty_cleanup(void) {
+  fprintf(stderr, "Removing symlink\n");
+  syslog(LOG_INFO, "Removing symlink\n");
   unlink(ttyfake);
-  link(ttybak, ttyfake);
-  unlink(ttybak);
+  if(restore) {
+    fprintf(stderr, "Restoring original device\n");
+    syslog(LOG_INFO, "Restoring original device\n");
+    link(ttybak, ttyfake);
+    unlink(ttybak);
+  }
 }
 
 
@@ -67,15 +84,18 @@ static void tty_restore(int __attribute__((unused)) signo) {
   exit(0);
 }
 
-
-int main(int argc, char *argv[]) {
-  int fd;
+int main(int argc, char *argv[])
+{
+  int fd; 
   struct pollfd pfd[2];
   int pollret, r;
   char buffer[BUFFER_SIZE];
   char *pts;
   int ptmx;
   int daemonize = 0;
+  struct timespec poll_interval, remaining;
+  poll_interval.tv_sec = 0;
+  poll_interval.tv_nsec = POLL_INTERVAL;
 
   while (1) {
     int c;
@@ -87,19 +107,24 @@ int main(int argc, char *argv[]) {
       case 'd':
         daemonize = 1;
         break;
+
       case 'h':
-        usage(argv[0]);  // implies exit
+        usage(argv[0]); // implies exit
         break;
+
       case 's':
         tty_bus_path = strdup(optarg);
         break;
+
       case 'o':
         force_overwrite = 1;
         break;
+
       default:
-        usage(argv[0]);  // implies exit
+        usage(argv[0]); // implies exit
     }
   }
+
   if (optind != (argc - 1))
     usage(argv[0]);  // implies exit
 
@@ -114,33 +139,40 @@ int main(int argc, char *argv[]) {
       unlink(ttybak);
       link(ttyfake, ttybak);
       unlink(ttyfake);
-      atexit(_tty_restore);
-      sigset(SIGTERM, tty_restore);
-      sigset(SIGINT, tty_restore);
-      sigset(SIGUSR1, tty_restore);
-      sigset(SIGUSR2, tty_restore);
+      restore = 1;
     } else {
       fprintf(stderr, "%s already exists! use -o to force overwrite\n", ttyfake);
+      syslog(LOG_ERR, "%s already exists! use -o to force overwrite\n", ttyfake);
       exit(1);
     }
   }
+    
 
   if (!tty_bus_path)
     tty_bus_path = strdup("/tmp/ttybus");
-
+  
   fprintf(stderr, "Connecting to bus: %s\n", tty_bus_path);
+  syslog(LOG_INFO, "Connecting to bus: %s\n", tty_bus_path);
   fd = tty_connect(tty_bus_path);
+
 
   ptmx = open("/dev/ptmx", O_RDWR);
   pts = (char *) ptsname(ptmx);
   fprintf(stderr, "Device: %s is now %s\n", pts, ttyfake);
+  syslog(LOG_INFO, "Device: %s is now %s\n", pts, ttyfake);
   grantpt(ptmx);
   unlockpt(ptmx);
 
   symlink(pts, ttyfake);
   chmod(pts, 00777);
+  atexit(_tty_cleanup);
+  sigset(SIGTERM, tty_restore);
+  sigset(SIGINT, tty_restore);
+  sigset(SIGUSR1, tty_restore);
+  sigset(SIGUSR2, tty_restore);
 
   for (;;) {
+    nanosleep(&poll_interval, &remaining);
     pfd[0].fd = ptmx;
     pfd[0].events = POLLIN;
     pfd[1].fd = fd;
@@ -148,24 +180,30 @@ int main(int argc, char *argv[]) {
     pollret = poll(pfd, 2, 1000);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
-    if (pollret == 0)
+    if (pollret == 0) {
       continue;
+    }
 
-    if ((pfd[0].revents & POLLHUP || pfd[0].revents & POLLERR || pfd[0].revents & POLLNVAL) ||
-        (pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents & POLLNVAL))
+    if ((pfd[0].revents & POLLERR || pfd[0].revents & POLLNVAL) ||
+        (pfd[1].revents & POLLHUP || pfd[1].revents & POLLERR || pfd[1].revents & POLLNVAL)) {
+      syslog(LOG_INFO, "Terminating: %d %d\n", pfd[0].revents, pfd[1].revents);
       exit(1);
+    }
     if (pfd[0].revents & POLLIN) {
       r = read(ptmx, buffer, BUFFER_SIZE);
       pfd[1].events = POLLOUT;
       pollret = poll(&pfd[1], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
-      if (pfd[1].revents & POLLOUT)
+      if (pfd[1].revents & POLLOUT) {
         write(fd, buffer, r);
+      }
     }
     if (pfd[1].revents & POLLIN) {
       r = read(fd, buffer, BUFFER_SIZE);
@@ -174,10 +212,12 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[0], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
-      if (pfd[0].revents & POLLOUT)
+      if (pfd[0].revents & POLLOUT) {
         write(ptmx, buffer, r);
+      }
     }
   }
 }

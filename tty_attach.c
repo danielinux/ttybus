@@ -13,6 +13,7 @@
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <syslog.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,7 +35,16 @@ static void usage(char *app) {
   fprintf(stderr, "-h: shows this help\n");
   fprintf(stderr, "-d: detach from terminal and run as daemon\n");
   fprintf(stderr, "-s bus_path: uses bus_path as bus path name (default: /tmp/ttybus)\n");
-  fprintf(stderr, "-i init_string: send init string to device\n");
+  fprintf(stderr, "-i init_string: send init string to device\n\n");
+  fprintf(stderr, "Please also see: tty_bus, tty_fake, tty_plug, dpipe\n");
+  fprintf(stderr, "Example of usage:\n");
+  fprintf(stderr, "  Create a new bus called /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_bus -d -s /tmp/ttyS0mux\n");
+  fprintf(stderr, "  Connect a real device to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_attach -d -s /tmp/ttyS0mux /dev/ttyS0\n");
+  fprintf(stderr, "  Create two fake ttyS0 devices, attached to the bus /tmp/ttyS0mux\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.0\n");
+  fprintf(stderr, "    tty_fake -d -s /tmp/ttyS0mux /dev/ttyS0.1\n");
   exit(2);
 }
 
@@ -47,6 +57,7 @@ int tty_connect(char *path) {
   strncpy(sun.sun_path, path, strlen(path));
   if (connect(connect_fd, (struct sockaddr *) &sun, sizeof(sun)) < 0) {
     perror("Cannot connect to socket");
+    syslog(LOG_ERR, "Cannot connect to socket");
     exit(-1);
   }
   return connect_fd;
@@ -96,6 +107,7 @@ int main(int argc, char *argv[]) {
     tty_bus_path = strdup("/tmp/ttybus");
 
   fprintf(stderr, "Connecting to bus: %s\n", tty_bus_path);
+  syslog(LOG_INFO, "Connecting to bus: %s\n", tty_bus_path);
   fd = tty_connect(tty_bus_path);
 
   realdev = open(devname, O_RDWR);
@@ -110,6 +122,7 @@ int main(int argc, char *argv[]) {
     pollret = poll(&pfd[0], 1, 50);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
     if (pfd[0].revents & POLLOUT) {
@@ -117,6 +130,7 @@ int main(int argc, char *argv[]) {
       write(realdev, "\n", 1);
     } else {
       fprintf(stderr, "Device is busy, cannot send init string.\n");
+      syslog(LOG_WARNING, "Device is busy, cannot send init string.\n");
     }
   }
   for (;;) {
@@ -127,6 +141,7 @@ int main(int argc, char *argv[]) {
     pollret = poll(pfd, 2, 1000);
     if (pollret < 0) {
       fprintf(stderr, "Poll error: %s\n", strerror(errno));
+      syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
       exit(1);
     }
     if (pollret == 0)
@@ -141,6 +156,7 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[1], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
         exit(1);
       }
       if (pfd[1].revents & POLLOUT)
@@ -153,7 +169,8 @@ int main(int argc, char *argv[]) {
       pollret = poll(&pfd[0], 1, 50);
       if (pollret < 0) {
         fprintf(stderr, "Poll error: %s\n", strerror(errno));
-        exit(1);
+        syslog(LOG_ERR, "Poll error: %s\n", strerror(errno));
+       exit(1);
       }
       if (pfd[0].revents & POLLOUT)
         write(realdev, buffer, r);
