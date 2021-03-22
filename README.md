@@ -1,5 +1,5 @@
 # TTYBUS project
-**Copyright (c) 2010 Daniele Lacamera <root@danielinux.net>**
+**Copyright (c) 2010-2021 Daniele Lacamera <root@danielinux.net> and other contributors (see `git log` for details)**
 
 `dpipe` command - copyright 2003 Renzo Davoli
 
